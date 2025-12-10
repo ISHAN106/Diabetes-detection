@@ -1,142 +1,188 @@
-# 🩺 Diabetes Detection Web App (Flask + PyTorch)
+DiabetesDetector
 
-A Machine Learning based web application that predicts the likelihood of diabetes using medical diagnostic parameters.  
-The model is trained using the **Pima Indians Diabetes Dataset** and deployed through a user-friendly **Flask** interface.
+A local prototype for predicting diabetes risk through a browser-based interface. The project includes:
 
----
+A Flask backend (app.py) that loads a trained PyTorch model, preprocesses medical input features, and returns a diabetes prediction.
 
-## 🚀 Features
+A simple HTML/CSS frontend (templates/) that allows a user to input health parameters and shows prediction results.
 
-- 🔬 Deep Learning model built with **PyTorch**
-- 🧹 Automated data preprocessing (scaling & cleaning)
-- 🌐 Web app built using **Flask**
-- 🧑‍⚕️ Simple form-based UI for entering medical values
-- 📈 Model trained & evaluated with metrics (Accuracy, Confusion Matrix)
-- 💾 Saved trained model for quick inference
+Scripts and utilities for training the model, saving weights, and performing local inference.
 
----
+This README describes how to set up and run the project locally (Windows / PowerShell), required environment variables, troubleshooting tips, and where to look in the code.
 
-## 📂 Project Structure
+Quick status
 
-diabetes-detection-app/
-│
-├── static/ # CSS, images, UI assets (optional)
-├── templates/
-│ ├── index.html # Input form page
-│ └── result.html # Prediction result page
-│
-├── data/
-│ └── diabetes.csv # Pima dataset
-│
-├── model/
-│ └── diabetes_model.pth # Saved PyTorch trained model
-│
-├── app.py # Flask app script
-├── train_model.py # Model training code
-├── preprocess.py # Scaling & preprocessing logic
-├── requirements.txt # All dependencies
-└── README.md # Documentation
+Frontend: Flask-rendered UI in templates/ (HTML forms → POST → prediction).
 
-yaml
-Copy code
+Backend: Flask app in app.py, uses PyTorch model loading, NumPy, Pandas, and Scikit-Learn preprocessing.
 
----
+Model: A trained neural network stored as model/diabetes_model.pth (required for real predictions).
 
-## 🧠 Dataset
+Dataset: Pima Indians Diabetes Dataset (UCI Repository).
 
-📌 **Source**: PIMA Indians Diabetes Dataset  
-- Rows: 768  
-- Features: 8 medical predictors (e.g., Glucose, BMI, Age)
-- Label: Diabetes outcome (0 = No, 1 = Yes)
+Dependencies: Listed inside requirements.txt (recommended).
 
-This dataset is widely used in healthcare ML research.
+Prerequisites
 
----
+Python 3.8+
 
-## ⚙️ Installation & Setup
+pip (Python package installer)
 
-### 1️⃣ Clone the repository
-```bash
-git clone https://github.com/your-username/diabetes-detection-app.git
-cd diabetes-detection-app
-2️⃣ Create Virtual Environment (recommended)
-bash
-Copy code
-python -m venv venv
-venv\Scripts\activate   # Windows
-# source venv/bin/activate  # macOS / Linux
-3️⃣ Install Dependencies
-bash
-Copy code
+Optional: Virtual environment for isolation
+
+diabetes_model.pth available in the model/ folder
+(Run train_model.py to retrain if file missing.)
+
+Recommended development environment (Windows PowerShell)
+
+Open one terminal for running the backend (Flask server).
+
+Backend setup (Flask)
+
+Create and activate a Python venv (optional but recommended):
+
+cd C:\Users\ishan\Downloads\DiabetesDetector
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+
+Install Python dependencies:
+
 pip install -r requirements.txt
-4️⃣ Train the Model (optional – already included)
-If you wish to retrain:
 
-bash
-Copy code
-python train_model.py
-5️⃣ Run the Web App
-bash
-Copy code
+
+(If requirements.txt is missing, install these manually:)
+
+pip install flask numpy pandas torch scikit-learn
+
+
+Start the backend:
+
 python app.py
-🌍 Visit in browser:
 
-cpp
-Copy code
-http://127.0.0.1:5000/
-🖥️ Usage
-Enter your values in the form (Glucose, BMI, Insulin, etc.)
 
-Click Predict
+The backend runs on:
+http://0.0.0.0:5000
+ → Local access
+Home page & form:
+http://localhost:5000/
 
-App displays:
+Key files and code locations
 
-“Diabetic” 🚨
+app.py — loads the model, receives form data, preprocesses values, returns predictions.
 
-or “Not Diabetic” 🟢
+Endpoint /predict handles POST form input.
 
-📊 Model Details
-Framework: PyTorch
+Uses scaling logic from preprocess.py if available.
 
-Model Type: Feed-Forward Neural Network
+train_model.py — train script for generating diabetes_model.pth.
 
-Activation: ReLU
+Modify model layers and hyperparameters here.
 
-Optimizer: Adam
+templates/index.html — input form UI for health parameters (Glucose, BMI, Age, etc.)
 
-Loss: Binary CrossEntropy
+templates/result.html — shows prediction response (Diabetic / Not Diabetic)
 
-Evaluation Metrics:
+model/diabetes_model.pth — saved trained weights used at runtime.
 
-Accuracy
+Why "Diabetic" result appears even for low values?
 
-Confusion Matrix
+The model prediction is based on historical correlations in the dataset.
+Some combinations like:
 
-You can modify the model architecture inside train_model.py.
+Higher Glucose
 
-📋 Requirements
-See ➜ requirements.txt
-Example dependencies:
+High BMI
 
-nginx
-Copy code
-Flask
-numpy
-pandas
-scikit-learn
-torch
-matplotlib
-🛡️ Disclaimer
-This project is purely research & education oriented.
-It is not a medical diagnostic tool and should not replace professional healthcare advice.
+Higher Diabetes Pedigree Function
 
-🤝 Contributing
-Contributions are welcome!
-Submit issues or pull requests to enhance the application.
+…can push the probability above threshold.
+The threshold is typically 0.5 — you can tune this in app.py:
 
-🙌 Acknowledgements
-Dataset provided by UCI Machine Learning Repository
+if prob >= 0.5:
+    label = "Diabetic"
 
-Developed using PyTorch and Flask
 
-📜 License
+Modify threshold if needed.
+
+Common issues & troubleshooting
+❌ Server runs but page shows "Model not found"
+
+Ensure model/diabetes_model.pth exists.
+
+Re-train using:
+
+python train_model.py
+
+❌ Wrong Python / Torch errors
+
+Install matching CPU version of PyTorch:
+
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+❌ POST form gives 500 error
+
+Check console logs printed by:
+
+python app.py
+
+
+Verify all fields exist:
+Feature count must match 8 input parameters expected by model.
+
+❌ No result page update
+
+Ensure the form uses:
+
+method="POST" action="/predict"
+
+
+Restart Flask after editing templates.
+
+Inspecting model output quickly
+
+Test API using PowerShell:
+
+Invoke-WebRequest -Uri "http://localhost:5000/" -Method GET
+
+
+Debug logs are printed inside backend console whenever a prediction is made.
+
+Development notes and next steps
+
+Add better UI/validation for numeric fields (ranges, placeholders, tooltips)
+
+Add graphical analytics dashboard showing risk scores over time
+
+Deploy using Render / Railway / Azure Web App
+
+Store predictions in MongoDB or SQLite for historical tracking
+
+Add real-time probability meter instead of binary outcome
+
+Where to look in the code for common edits
+Requirement	File
+Change model architecture	train_model.py
+Change threshold for prediction	app.py
+Change form UI labels	templates/index.html
+Add new health features	Model + UI + preprocessing
+Contributing
+
+Please submit issues or pull requests with improved preprocessing, UI or model accuracy.
+
+If you modify the dataset or feature count, update the model and HTML fields accordingly.
+
+License
+
+This repository is provided as-is for educational and prototyping purposes.
+Not intended for real medical advice — always consult a physician for health decisions.
+
+Contact / Help
+
+If you'd like me to:
+
+Add screenshots of UI → say "Add UI preview"
+
+Create proper dataset download script → say "Add dataset script"
+
+Add classified output logs or analytics → say "Add dashboard features"
