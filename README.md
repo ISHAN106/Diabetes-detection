@@ -1,188 +1,269 @@
-DiabetesDetector
+# DiabetesDetector
 
 A local prototype for predicting diabetes risk through a browser-based interface. The project includes:
 
-A Flask backend (app.py) that loads a trained PyTorch model, preprocesses medical input features, and returns a diabetes prediction.
+- A **Flask backend** (`app.py`) that loads a trained PyTorch model, preprocesses medical input features, and returns a diabetes prediction.
+- A **simple HTML/CSS frontend** (`templates/`) that allows a user to input health parameters and shows prediction results.
+- Scripts and utilities for **training the model**, saving weights, and performing local inference.
 
-A simple HTML/CSS frontend (templates/) that allows a user to input health parameters and shows prediction results.
+This README describes how to set up and run the project locally (Windows / PowerShell), required dependencies, common troubleshooting steps, and where to look in the code.
 
-Scripts and utilities for training the model, saving weights, and performing local inference.
+---
 
-This README describes how to set up and run the project locally (Windows / PowerShell), required environment variables, troubleshooting tips, and where to look in the code.
+## Quick status
 
-Quick status
+- **Frontend:** Flask-rendered UI in `templates/` (HTML forms → POST → prediction).
+- **Backend:** Flask app in `app.py`, uses PyTorch model loading, NumPy, Pandas, and Scikit-Learn preprocessing.
+- **Model:** Trained neural network expected at `model/diabetes_model.pth` (required if you want predictions to work).
+- **Dataset:** Pima Indians Diabetes Dataset (UCI Repository).
+- **Dependencies:** Recommended to store in `requirements.txt`.
 
-Frontend: Flask-rendered UI in templates/ (HTML forms → POST → prediction).
+---
 
-Backend: Flask app in app.py, uses PyTorch model loading, NumPy, Pandas, and Scikit-Learn preprocessing.
+## Prerequisites
 
-Model: A trained neural network stored as model/diabetes_model.pth (required for real predictions).
+- Python 3.8+
+- pip (Python package manager)
+- Optional: Virtual environment for isolation
+- A trained model saved as `model/diabetes_model.pth`  
+  (You can generate this by running `train_model.py`.)
 
-Dataset: Pima Indians Diabetes Dataset (UCI Repository).
+---
 
-Dependencies: Listed inside requirements.txt (recommended).
+## Recommended development environment (Windows PowerShell)
 
-Prerequisites
+- Open one PowerShell terminal for the backend (Flask server).
 
-Python 3.8+
+---
 
-pip (Python package installer)
+## Backend setup (Flask)
 
-Optional: Virtual environment for isolation
+### 1. Create and activate a Python virtual environment (optional but recommended)
 
-diabetes_model.pth available in the model/ folder
-(Run train_model.py to retrain if file missing.)
-
-Recommended development environment (Windows PowerShell)
-
-Open one terminal for running the backend (Flask server).
-
-Backend setup (Flask)
-
-Create and activate a Python venv (optional but recommended):
-
+```powershell
 cd C:\Users\ishan\Downloads\DiabetesDetector
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
+2. Install Python dependencies
+If you have a requirements.txt:
 
-
-Install Python dependencies:
-
+powershell
+Copy code
 pip install -r requirements.txt
+If not, install the common dependencies manually:
 
-
-(If requirements.txt is missing, install these manually:)
-
+powershell
+Copy code
 pip install flask numpy pandas torch scikit-learn
-
-
-Start the backend:
-
+3. Start the backend
+powershell
+Copy code
 python app.py
-
-
 The backend runs on:
-http://0.0.0.0:5000
- → Local access
-Home page & form:
-http://localhost:5000/
 
-Key files and code locations
+Base URL: http://0.0.0.0:5000 (internally)
 
-app.py — loads the model, receives form data, preprocesses values, returns predictions.
+Localhost URL: http://localhost:5000
 
-Endpoint /predict handles POST form input.
+The home page should display the form UI for entering medical parameters.
 
-Uses scaling logic from preprocess.py if available.
+Project structure
+A typical layout for this project:
 
-train_model.py — train script for generating diabetes_model.pth.
+text
+Copy code
+DiabetesDetector/
+├── app.py                  # Flask backend (routes, prediction logic)
+├── train_model.py          # Script to train and save the model
+├── preprocess.py           # Optional: scaling and preprocessing utilities
+├── model/
+│   └── diabetes_model.pth  # Saved PyTorch model weights
+├── templates/
+│   ├── index.html          # Input form page
+│   └── result.html         # Result display page
+├── static/                 # (Optional) CSS, JS, images
+├── requirements.txt        # Python dependencies
+└── README.md               # Project documentation
+Key files and what they do
+app.py
 
-Modify model layers and hyperparameters here.
+Loads the trained model (diabetes_model.pth).
 
-templates/index.html — input form UI for health parameters (Glucose, BMI, Age, etc.)
+Defines routes:
 
-templates/result.html — shows prediction response (Diabetic / Not Diabetic)
+GET / → renders the main form (index.html).
 
-model/diabetes_model.pth — saved trained weights used at runtime.
+POST /predict → receives form data, preprocesses it, runs model prediction, and returns result page.
 
-Why "Diabetic" result appears even for low values?
+Applies any preprocessing (e.g., scaling) either inline or via preprocess.py.
 
-The model prediction is based on historical correlations in the dataset.
-Some combinations like:
+train_model.py
 
-Higher Glucose
+Loads the Pima Indians Diabetes Dataset (CSV or from a path).
 
-High BMI
+Splits data into train/test sets.
 
-Higher Diabetes Pedigree Function
+Builds and trains a PyTorch model.
 
-…can push the probability above threshold.
-The threshold is typically 0.5 — you can tune this in app.py:
+Saves the model weights to model/diabetes_model.pth.
 
+templates/index.html
+
+Form-based UI for health parameters such as:
+
+Pregnancies
+
+Glucose
+
+Blood Pressure
+
+Skin Thickness
+
+Insulin
+
+BMI
+
+Diabetes Pedigree Function
+
+Age
+
+Sends data using method="POST" to /predict.
+
+templates/result.html
+
+Displays whether the predicted class is:
+
+"Diabetic"
+
+or "Not Diabetic"
+
+Optionally shows the prediction probability and input summary.
+
+Why "Diabetic" shows up for some inputs
+The prediction depends on the probability output by the model.
+Typically:
+
+python
+Copy code
 if prob >= 0.5:
     label = "Diabetic"
+else:
+    label = "Not Diabetic"
+If certain combinations of values (e.g., high glucose, high BMI, certain pedigree values) exceed this threshold, the model will label the user as "Diabetic".
 
+You can change the threshold in app.py to make the model more or less strict:
 
-Modify threshold if needed.
+python
+Copy code
+THRESHOLD = 0.6  # for example
 
+if prob >= THRESHOLD:
+    label = "Diabetic"
+else:
+    label = "Not Diabetic"
 Common issues & troubleshooting
-❌ Server runs but page shows "Model not found"
+1. Server runs but shows an error about missing model
+Symptom: Console or logs say model file not found.
 
-Ensure model/diabetes_model.pth exists.
+Fix:
 
-Re-train using:
+Make sure model/diabetes_model.pth exists.
 
+Re-train and save the model using:
+
+powershell
+Copy code
 python train_model.py
+Confirm that app.py points to the correct path:
 
-❌ Wrong Python / Torch errors
+python
+Copy code
+MODEL_PATH = "model/diabetes_model.pth"
+2. PyTorch or version errors when importing torch
+Symptom: Import error or CPU/GPU mismatch.
 
-Install matching CPU version of PyTorch:
+Fix:
 
+Install a CPU-only compatible PyTorch version (for most local setups):
+
+powershell
+Copy code
 pip install torch --index-url https://download.pytorch.org/whl/cpu
+3. POST /predict returns HTTP 500
+Symptom: Submitting the form gives a server error.
 
-❌ POST form gives 500 error
+Checks:
 
-Check console logs printed by:
+Run Flask in the terminal and read the stack trace.
 
+Ensure all form fields have proper name attributes that match what app.py expects.
+
+Confirm the number and order of features matches what the model was trained on.
+
+4. Page does not update after submitting form
+Symptom: You click submit, but nothing seems to happen.
+
+Fix:
+
+Confirm your form tag looks something like:
+
+html
+Copy code
+<form method="POST" action="/predict">
+After editing templates, stop and restart Flask:
+
+powershell
+Copy code
+Ctrl + C
 python app.py
+Quick testing from browser or PowerShell
+Open in browser:
+http://localhost:5000/
 
+Basic check from PowerShell:
 
-Verify all fields exist:
-Feature count must match 8 input parameters expected by model.
-
-❌ No result page update
-
-Ensure the form uses:
-
-method="POST" action="/predict"
-
-
-Restart Flask after editing templates.
-
-Inspecting model output quickly
-
-Test API using PowerShell:
-
+powershell
+Copy code
 Invoke-WebRequest -Uri "http://localhost:5000/" -Method GET
-
-
-Debug logs are printed inside backend console whenever a prediction is made.
+Logs in the terminal will show requests and any errors.
 
 Development notes and next steps
+Add input validation for each field (e.g., no negative values).
 
-Add better UI/validation for numeric fields (ranges, placeholders, tooltips)
+Display probability as a percentage (e.g., "Risk: 72%").
 
-Add graphical analytics dashboard showing risk scores over time
+Add charts/analytics (e.g., past test history for a user).
 
-Deploy using Render / Railway / Azure Web App
+Add user authentication if multiple people will use it.
 
-Store predictions in MongoDB or SQLite for historical tracking
-
-Add real-time probability meter instead of binary outcome
+Containerize the app using Docker for deployment.
 
 Where to look in the code for common edits
-Requirement	File
-Change model architecture	train_model.py
-Change threshold for prediction	app.py
-Change form UI labels	templates/index.html
-Add new health features	Model + UI + preprocessing
+Change model architecture or training logic:
+train_model.py
+
+Change prediction threshold or output text:
+app.py
+
+Change field labels and input types (number/text/slider):
+templates/index.html
+
+Style, fonts, layout:
+templates/index.html, templates/result.html, and optionally static/ CSS files.
+
 Contributing
+If you add features (e.g., better preprocessing, more robust model, or a nicer UI), please:
 
-Please submit issues or pull requests with improved preprocessing, UI or model accuracy.
+Keep code modular and readable.
 
-If you modify the dataset or feature count, update the model and HTML fields accordingly.
+Update this README if setup or behavior changes.
 
-License
+If you change the number of input features:
 
-This repository is provided as-is for educational and prototyping purposes.
-Not intended for real medical advice — always consult a physician for health decisions.
+Update:
 
-Contact / Help
+Model definition and training (train_model.py)
 
-If you'd like me to:
+Input parsing (app.py)
 
-Add screenshots of UI → say "Add UI preview"
-
-Create proper dataset download script → say "Add dataset script"
-
-Add classified output logs or analytics → say "Add dashboard features"
+HTML form fields (index.html)
